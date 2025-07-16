@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Memory Capsule XR – BAI's XR Project</title>
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body class="min-h-screen flex flex-col items-center px-6 py-12 select-none bg-gradient-to-b from-indigo-900 via-indigo-800 to-indigo-900 text-white">
+
+  <!-- Loading Screen -->
+  <div id="loadingScreen" class="fixed inset-0 flex flex-col items-center justify-center bg-indigo-900 z-50">
+    <div class="mb-4 text-2xl font-bold">กำลังโหลด...</div>
+    <div id="loadingSpinner" class="w-12 h-12 border-4 border-white border-t-transparent rounded-full animate-spin"></div>
+    <div id="creditText" class="mt-4 text-indigo-300 font-semibold">สร้างโดย BAI</div>
+  </div>
+
+  <!-- โปรไฟล์ + ปุ่มตกแต่ง (ด้านบน) -->
+  <div class="w-full max-w-5xl flex flex-col sm:flex-row items-center justify-between mb-10 bg-indigo-900 bg-opacity-40 rounded-3xl p-6 shadow-lg ring-1 ring-indigo-600">
+    <!-- โปรไฟล์ -->
+    <div class="flex items-center space-x-4 mb-6 sm:mb-0" id="profileDisplay">
+      <img id="profilePictureDisplay" src="https://cdn-icons-png.flaticon.com/512/149/149071.png" alt="รูปโปรไฟล์" class="w-20 h-20 rounded-full border-4 border-white shadow-lg" />
+      <div>
+        <h3 id="profileNameDisplay" class="text-2xl font-bold">ไม่ระบุชื่อ</h3>
+        <p id="profileBioDisplay" class="text-indigo-300">ยังไม่มีคำบรรยาย</p>
+      </div>
+    </div>
+
+    <!-- ปุ่มตกแต่ง -->
+    <button onclick="openProfileEditor()" 
+      class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-3 rounded-full shadow-lg ring-1 ring-indigo-400/70 transition-transform transform hover:scale-105">
+      🎨 ตกแต่งโปรไฟล์
+    </button>
+  </div>
+
+  <!-- ชื่อแอปหลัก -->
+  <h1 class="text-5xl font-extrabold mb-3 text-center select-text max-w-4xl mx-auto">Memory Capsule XR</h1>
+  <h2 class="text-xl font-semibold mb-8 text-indigo-300 select-text max-w-3xl mx-auto text-center">
+    ฝากความทรงจำไว้ในแผนที่กับ <span class="text-indigo-400 font-extrabold">BAI's XR Project</span>
+  </h2>
+
+  <!-- แผนที่ -->
+  <div id="map" class="w-full max-w-4xl h-96 mb-8 rounded-3xl shadow-lg ring-1 ring-indigo-600"></div>
+
+  <!-- ฟอร์มฝังแคปซูล -->
+  <form id="capsuleForm" class="max-w-3xl w-full bg-indigo-900 bg-opacity-50 backdrop-blur-md rounded-3xl p-8 shadow-lg ring-1 ring-indigo-600 mb-12">
+    <label for="location" class="block mb-2 font-semibold text-indigo-300 text-lg select-none">📍 พิกัด (Lat, Lng)</label>
+    <input type="text" id="location" readonly
+      class="w-full rounded-xl px-6 py-4 text-indigo-900 font-semibold bg-indigo-50/90 placeholder-indigo-400 shadow-inner focus:ring-6 focus:ring-indigo-400 focus:ring-opacity-90 mb-6" />
+
+    <label for="memory" class="block mb-3 font-semibold text-indigo-300 text-lg select-none">📝 ความทรงจำ</label>
+    <textarea id="memory" rows="5" placeholder="เขียนสิ่งที่อยากฝากไว้ตรงนี้…"
+      class="w-full rounded-xl px-6 py-5 resize-none font-semibold text-indigo-900 bg-indigo-50/90 placeholder-indigo-400 shadow-inner focus:ring-6 focus:ring-indigo-400 focus:ring-opacity-90 mb-6"></textarea>
+
+    <button type="submit" aria-label="ฝังแคปซูล" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-5 rounded-3xl shadow-lg ring-1 ring-indigo-400/70 transition-transform transform hover:scale-110">
+      📦 ฝังแคปซูล
+    </button>
+  </form>
+
+  <!-- รายการแคปซูลทั้งหมด -->
+  <h3 class="text-3xl font-extrabold mb-8 text-indigo-200 select-none text-center drop-shadow-md">🗂️ แคปซูลทั้งหมดของคุณ</h3>
+  <ul id="capsuleList" class="max-w-3xl mx-auto space-y-5 px-6" aria-live="polite" aria-relevant="additions removals"></ul>
+
+  <!-- Overlay บันทึก -->
+  <div id="cutsceneOverlay" class="fixed inset-0 bg-indigo-900 bg-opacity-90 flex items-center justify-center text-3xl font-extrabold text-indigo-200 hidden z-40 rounded-3xl shadow-lg">
+    บันทึกความทรงจำ...
+  </div>
+
+  <!-- Modal ยืนยันลบ -->
+  <div id="confirmModal" role="dialog" aria-modal="true" aria-labelledby="confirmModalLabel" aria-describedby="confirmModalDesc" 
+    class="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center hidden z-50">
+    <div id="confirmModalContent" class="bg-white rounded-xl p-6 max-w-sm w-full text-center shadow-lg">
+      <p id="confirmModalDesc" class="mb-6 text-gray-700">คุณแน่ใจหรือว่าต้องการลบแคปซูลนี้?</p>
+      <div id="confirmButtons" class="flex justify-center space-x-4">
+        <button id="btnCancel" type="button" aria-label="ยกเลิก" class="px-6 py-2 rounded bg-gray-400 text-white font-bold hover:bg-gray-500 transition">ยกเลิก</button>
+        <button id="btnConfirm" type="button" aria-label="ตกลง ลบ" class="px-6 py-2 rounded bg-red-600 text-white font-bold hover:bg-red-700 transition">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ChatGPT Widget -->
+  <div id="chatWidget" role="region" aria-label="ChatGPT ผู้ช่วย" tabindex="0" aria-live="polite" aria-atomic="false"
+    class="fixed bottom-6 right-6 w-80 max-w-full bg-indigo-900 rounded-xl shadow-lg flex flex-col overflow-hidden z-50 select-text">
+    <div id="chatHeader" tabindex="0" aria-expanded="true" aria-controls="chatBody" 
+      class="flex justify-between items-center bg-indigo-700 px-4 py-3 cursor-move select-none">
+      ChatGPT ผู้ช่วย
+      <button id="chatCloseBtn" aria-label="ปิดแชท" title="ปิดแชท" class="text-indigo-300 hover:text-white font-bold">✕</button>
+    </div>
+    <div id="chatBody" tabindex="0" class="flex-grow overflow-y-auto p-4 space-y-2 text-white"></div>
+    <form id="chatForm" aria-label="ส่งข้อความแชท" class="flex p-3 bg-indigo-800">
+      <input type="text" id="chatInput" placeholder="ถามฉันเกี่ยวกับแอปนี้..." autocomplete="off" aria-autocomplete="list" aria-describedby="chatHelp"
+        class="flex-grow rounded px-3 py-2 text-indigo-900 font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+      <button type="submit" aria-label="ส่งข้อความ" class="ml-2 bg-indigo-600 hover:bg-indigo-700 rounded px-4 py-2 font-bold text-white transition">ส่ง</button>
+    </form>
+  </div>
+
+  <div id="chatToggleBtnContainer" aria-hidden="true" style="display:none;" class="fixed bottom-6 right-6 z-50">
+    <button id="chatToggleBtn" aria-label="เปิดแชท ChatGPT" title="เปิดแชท ChatGPT" 
+      class="bg-indigo-600 hover:bg-indigo-700 text-white rounded-full p-3 shadow-lg ring-1 ring-indigo-400/70 transition-transform transform hover:scale-110">
+      💬 เปิดแชท
+    </button>
+  </div>
+
+  <!-- Modal ตกแต่งโปรไฟล์ -->
+ <!-- Modal ตกแต่งโปรไฟล์ (พื้นหลังเข้ม) -->
+<div id="profileModal" class="fixed top-0 left-0 w-full h-full bg-black bg-opacity-90 flex items-center justify-center hidden z-50">
+  <div class="bg-indigo-900 w-full max-w-xl rounded-xl p-6 space-y-4 text-white shadow-lg ring-1 ring-indigo-600">
+    <h2 class="text-2xl font-bold text-indigo-300">🎨 ตกแต่งโปรไฟล์</h2>
+
+    <label class="block">
+      ชื่อ:
+      <input id="profileName" class="w-full px-4 py-2 rounded border border-indigo-700 bg-indigo-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+    </label>
+
+    <label class="block">
+      คำอธิบายตัวเอง:
+      <textarea id="profileBio" class="w-full px-4 py-2 rounded border border-indigo-700 bg-indigo-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-400"></textarea>
+    </label>
+
+    <label class="block">
+      สีธีม:
+      <select id="profileTheme" class="w-full px-4 py-2 rounded border border-indigo-700 bg-indigo-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-400">
+        <option value="indigo">ม่วงอินดิโก้</option>
+        <option value="blue">น้ำเงิน</option>
+        <option value="pink">ชมพู</option>
+      </select>
+    </label>
+
+    <label class="block">
+      ภาพโปรไฟล์ (URL):
+      <input id="profilePic" class="w-full px-4 py-2 rounded border border-indigo-700 bg-indigo-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+    </label>
+
+    <label class="block">
+      เพลงพื้นหลัง (URL หรือชื่อไฟล์):
+      <input id="profileMusic" class="w-full px-4 py-2 rounded border border-indigo-700 bg-indigo-800 text-white focus:outline-none focus:ring-2 focus:ring-indigo-400" />
+    </label>
+
+    <div class="text-right space-x-2">
+      <button onclick="saveProfile()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold px-6 py-2 rounded shadow transition">💾 บันทึก</button>
+      <button onclick="closeProfileEditor()" class="bg-gray-600 hover:bg-gray-700 text-white font-bold px-6 py-2 rounded shadow transition">❌ ปิด</button>
+    </div>
+  </div>
+</div>
+
+
+  <script src="app.js"></script>
+</body>
+</html>

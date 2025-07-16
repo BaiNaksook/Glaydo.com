@@ -1,34 +1,92 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign-in-Glaydo</title>
-  <link rel="stylesheet" href="singin.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Login | Memory Capsule XR</title>
+  <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-  <div class="Sing-in-box">
-    <h2>Sign In</h2>
-    <form onsubmit="signUpUser(event)">
-      <label for="email">Email</label>
-      <input id="signup-email" type="email" placeholder="Your Email" required>
+<body class="min-h-screen bg-indigo-900 flex flex-col items-center justify-center px-4 select-none">
 
-      <label for="username">Username</label>
-      <input id="signup-username" type="text" placeholder="Username" required>
+  <!-- Header ชื่อเว็บ -->
+  <header class="mb-12 text-center select-text">
+    <h1 class="text-4xl font-extrabold text-indigo-300 drop-shadow-md leading-tight">
+      Memory Capsule XR
+    </h1>
+    <p class="text-indigo-400 font-semibold mt-1">
+      BAI's XR Project
+    </p>
+  </header>
 
-      <label for="password">Password</label>
-      <input id="signup-password" type="password" placeholder="Password" required>
+  <main class="w-full max-w-md">
+    <div id="loginForm" class="bg-indigo-800 bg-opacity-90 backdrop-blur-md rounded-3xl shadow-lg ring-1 ring-indigo-600 p-10">
+      <h2 class="text-3xl font-extrabold text-indigo-200 mb-8 text-center select-text">เข้าสู่ระบบ (ทดสอบ)</h2>
+      <div id="errorMsg" class="text-red-400 font-semibold mb-6 text-center min-h-[1.25rem]"></div>
 
-      <button type="submit">Sign In</button>
-      <p>Already have an Account?
-        <a href="login.html">Login</a>
-      </p>
-    </form>
-  </div>
+      <label for="username" class="block text-indigo-300 font-semibold mb-2 select-none">ชื่อผู้ใช้:</label>
+      <input
+        type="text"
+        id="username"
+        placeholder="กรุณาใส่ชื่อผู้ใช้"
+        autocomplete="off"
+        class="w-full rounded-xl px-5 py-4 mb-6 text-indigo-900 font-semibold focus:outline-none focus:ring-4 focus:ring-indigo-400 focus:ring-opacity-80 shadow-inner"
+      />
 
-  <script src="auth.js"></script>
+      <label for="password" class="block text-indigo-300 font-semibold mb-2 select-none">รหัสผ่าน:</label>
+      <input
+        type="password"
+        id="password"
+        placeholder="กรุณาใส่รหัสผ่าน"
+        class="w-full rounded-xl px-5 py-4 mb-8 text-indigo-900 font-semibold focus:outline-none focus:ring-4 focus:ring-indigo-400 focus:ring-opacity-80 shadow-inner"
+      />
+
+      <button
+        id="loginBtn"
+        class="w-full bg-indigo-600 hover:bg-indigo-700 text-white font-extrabold py-5 rounded-3xl shadow-lg ring-1 ring-indigo-400/70 transition-transform transform hover:scale-105"
+      >
+        เข้าสู่ระบบ
+      </button>
+    </div>
+  </main>
+
   <script>
-  document.getElementById('signup-form').addEventListener('submit', signUpUser);
-</script>
+    const mockUsers = {
+      "testuser": "1234",
+      "bai": "pass123",
+      "admin": "admin"
+    };
+
+    const loginForm = document.getElementById('loginForm');
+    const errorMsg = document.getElementById('errorMsg');
+    const loginBtn = document.getElementById('loginBtn');
+
+    function login(username, password) {
+      return mockUsers[username] && mockUsers[username] === password;
+    }
+
+    loginBtn.addEventListener('click', () => {
+      const username = document.getElementById('username').value.trim();
+      const password = document.getElementById('password').value;
+      if (!username || !password) {
+        errorMsg.textContent = 'กรุณากรอกชื่อผู้ใช้และรหัสผ่านให้ครบ';
+        return;
+      }
+      if (login(username, password)) {
+        errorMsg.textContent = '';
+        alert('เข้าสู่ระบบสำเร็จ');
+        window.location.href = 'main.html'; // แก้ลิงก์เว็บหลักที่นี่
+      } else {
+        errorMsg.textContent = 'ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง';
+      }
+    });
+
+    // รองรับกด Enter ในช่องรหัสผ่าน
+    document.getElementById('password').addEventListener('keyup', e => {
+      if (e.key === 'Enter') {
+        loginBtn.click();
+      }
+    });
+  </script>
+
 </body>
 </html>
